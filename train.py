@@ -80,6 +80,7 @@ def walk(G, size, n_walks, metropolized, nodes):
     return curr
 
 def _walk(G_size_walks_metropolized_nodes):
+    log.debug("Removing cycles by transforming to spanning forest")
     return walk(*G_size_walks_metropolized_nodes)
 
 def walks(G, workers, n_walks, size, metropolized):
