@@ -17,10 +17,10 @@ log = logging.getLogger(__name__)
 
 
 def load_edgelist(f, delimiter=None):
-    return nx.read_edgelist(f,  delimiter=delimiter)
+    return nx.read_edgelist(f, delimiter=delimiter)
 
 def load_adjlist(f, delimiter=None):
-    return nx.read_adjlist(f,  delimiter=delimiter)
+    return nx.read_adjlist(f, delimiter=delimiter)
 
 def random_walk(graph, size=-1, metropolized=False, start_node=None):
     """
@@ -111,7 +111,6 @@ def walks(G, workers, n_walks, size, metropolized):
     return list(itertools.chain(*walk_sc))
 
 def train(args):
-    random.seed(args.seed)
     log.info("Reading input file")
     if args.format == "edgelist":
         G = as_spanning_trees(load_edgelist(args.input, delimiter=args.delimiter))
@@ -136,7 +135,6 @@ def train(args):
                               window=args.window_size,
                               min_count=0,
                               iter=args.iter,
-                              sg=1,
                               trim_rule=None)
 
     else:
@@ -168,12 +166,13 @@ def main():
     p.add_argument('--iter', help="Number of iteration epocs", default=5, type=int)
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
-    p.add_argument('--metropolized', help="Use Metropolize Hastings for random walk", type=bool, default=False)
+    p.add_argument('--metropolized', help="Use Metropolis Hastings for random walk", type=bool, default=False)
     p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=False)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
     args = p.parse_args()
 
+    random.seed(args.seed)
     train(args)
 
 if __name__ == "__main__":

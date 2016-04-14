@@ -42,9 +42,9 @@ def queue_to_list(q,extract_size):
 
     return l
 
-def train_sg_pair(model, word, context_index, alpha = None, learn_vectors = True, learn_hidden = True,
-                  context_vectors = None, context_locks = None,
-                  scale = 1):
+def train_sg_pair(model, word, context_index, alpha=None, learn_vectors=True, learn_hidden=True,
+                  context_vectors=None, context_locks=None,
+                  scale=1):
 
     if word not in model.vocab:
         return
@@ -62,7 +62,7 @@ def train_sg_pair(model, word, context_index, alpha = None, learn_vectors = True
             yield context_index, p+model.keras_context_negative_base_index, model.neg_labels[i]
 
 
-def train_batch_sg(model, sentences, alpha = None, work = None, sub_batch_size = 256, batch_size = 256):
+def train_batch_sg(model, sentences, alpha=None, work=None, sub_batch_size=256, batch_size=256):
 
     batch_count = 0
     sub_batch_count = 0
@@ -102,12 +102,10 @@ def train_batch_sg(model, sentences, alpha = None, work = None, sub_batch_size =
 def build_keras_model_sg(index_size,
                          vector_size,
                          context_size,
-                         sub_batch_size = 256,
-                         learn_vectors = True,
-                         learn_hidden = True,
-                         model = None):
-
-    print(index_size)
+                         sub_batch_size=256,
+                         learn_vectors=True,
+                         learn_hidden=True,
+                         model=None):
 
     kerasmodel = Graph()
     kerasmodel.add_input(name='point', input_shape=(1,), dtype='int32')
@@ -121,7 +119,7 @@ def build_keras_model_sg(index_size,
     return kerasmodel
 
 
-def copy_word2vec_instance_from_to(w2v, w2v_to, sentences = None, documents = None):
+def copy_word2vec_instance_from_to(w2v, w2v_to, sentences=None, documents=None):
         if hasattr(w2v,'dm'):
             if w2v.dm is None :
             #if not w2v_to.dm_concat:
