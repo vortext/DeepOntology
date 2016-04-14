@@ -23,7 +23,7 @@ import keras.constraints
 
 from keras.utils.np_utils import accuracy
 from keras.models import Graph,Sequential
-from keras.layers.core import Dense, Dropout, Activation, Merge, Flatten , Lambda
+from keras.layers.core import Dense, Dropout, Activation, Merge, Flatten, Lambda
 from keras.layers.embeddings import Embedding
 from keras.optimizers import SGD
 from keras.objectives import mse
@@ -121,7 +121,7 @@ def build_keras_model_sg(index_size,
 
 def copy_word2vec_instance_from_to(w2v, w2v_to, sentences=None, documents=None):
         if hasattr(w2v,'dm'):
-            if w2v.dm is None :
+            if w2v.dm is None:
             #if not w2v_to.dm_concat:
                 w2v_to.sg = w2v.sg
             else:
@@ -180,14 +180,14 @@ def train_prepossess(model):
 
     vocab_size = len(model.vocab)
 
-    if model.negative>0 and model.hs:
+    if model.negative > 0 and model.hs:
         model.keras_context_negative_base_index = len(model.vocab)
         model.keras_context_index_size = len(model.vocab)*2
         model.keras_syn1 = np.vstack((model.syn1, model.syn1neg))
     else:
         model.keras_context_negative_base_index = 0
         model.keras_context_index_size = len(model.vocab)
-        if model.hs :
+        if model.hs:
             model.keras_syn1 = model.syn1
         else:
             model.keras_syn1 = model.syn1neg
@@ -229,7 +229,7 @@ class Word2VecKeras(gensim.models.word2vec.Word2Vec):
                 sub_batch_size_update = True
                 self.sub_batch_size = sub_batch_size
 
-        samples_per_epoch = max(1,int((self.iter*self.window*2*sum(map(len,sentences)))/(sub_batch_size)))
+        samples_per_epoch = max(1, int((self.iter*self.window*2*sum(map(len,sentences)))/(sub_batch_size)))
 
         if not hasattr(self, 'kerasmodel') or sub_batch_size_update:
             self.kerasmodel = build_keras_model_sg(index_size = vocab_size,
