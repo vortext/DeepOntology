@@ -7,6 +7,7 @@ import sys
 import logging
 
 from gensim.models import Word2Vec
+from word2veckeras import Word2VecKeras
 
 from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 
@@ -84,13 +85,11 @@ def chunks(l, n):
 def walk(G, size, n_walks, metropolized, nodes):
     curr = []
     for i in range(n_walks):
-        log.info("Walking the walk %s of %s" % (i, n_walks))
         random.shuffle(nodes)
         for n in nodes:
             walk = random_walk(G, size=size, metropolized=metropolized, start_node=n)
             curr += [list(walk)]
 
-        log.info("Done walking the walk %s of %s" % (i, n_walks))
     return curr
 
 def _walk(G_size_walks_metropolized_nodes):
@@ -101,6 +100,7 @@ def walks(G, workers, n_walks, size, metropolized):
     node_divisor = len(p._pool)*4
     node_chunks = list(chunks(G.nodes(), int(G.order()/node_divisor)))
     num_chunks = len(node_chunks)
+    print("Generating walks with %s chunks on %s processes" % (num_chunks, workers))
     walk_sc = p.map(_walk,
                     zip([G]*num_chunks,
                         [size]*num_chunks,
@@ -130,14 +130,24 @@ def train(args):
                       metropolized=args.metropolized)
 
     log.info("Training")
-    model = Word2Vec(all_walks,
-                     size=args.representation_size,
-                     window=args.window_size,
-                     min_count=0,
-                     workers=args.workers,
-                     iter=args.iter,
-                     sg=1,
-                     trim_rule=None)
+    if args.use_keras:
+        model = Word2VecKeras(all_walks,
+                              size=args.representation_size,
+                              window=args.window_size,
+                              min_count=0,
+                              iter=args.iter,
+                              sg=1,
+                              trim_rule=None)
+
+    else:
+        model = Word2Vec(all_walks,
+                        size=args.representation_size,
+                        window=args.window_size,
+                        min_count=0,
+                        workers=args.workers,
+                        iter=args.iter,
+                        sg=1,
+                        trim_rule=None)
 
     log.info("Saving model")
     model.save_word2vec_format(args.output)
@@ -159,6 +169,7 @@ def main():
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
     p.add_argument('--metropolized', help="Use Metropolize Hastings for random walk", type=bool, default=False)
+    p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=True)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
 
