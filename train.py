@@ -14,10 +14,10 @@ logging.basicConfig(level=LOG_LEVEL, format='[%(levelname)s] %(name)s %(asctime)
 log = logging.getLogger(__name__)
 
 
-def load_edgelist(f, delimiter='\t'):
+def load_edgelist(f, delimiter=None):
     return nx.read_edgelist(f,  delimiter=delimiter)
 
-def load_adjlist(f, delimiter='\t'):
+def load_adjlist(f, delimiter=None):
     return nx.read_adjlist(f,  delimiter=delimiter)
 
 def random_walk(graph, start_node=None, size=-1, metropolized=False):
@@ -91,6 +91,7 @@ def walks(G, n_walks=5, **kwargs):
 
 
 def train(args):
+    random.seed(args.seed)
     log.info("Reading input file")
     if args.format == "edgelist":
         G = as_spanning_trees(load_edgelist(args.input, delimiter=args.delimiter))
@@ -99,19 +100,12 @@ def train(args):
     else:
         print("Format must be one of edgelist or adjlist")
 
-    def generator():
-        return walks(G, n_walks=args.walks, size=args.length, metropolized=args.metropolized)
-
-    class WalkIterator(object):
-        def __iter__(self):
-            self.generator = generator()
-            return self
-
-        def next(self):
-            return self.generator.next()
+    log.info("Generating random walks")
+    # TODO make this use some file for larger than memory data sets
+    all_walks = list(walks(G, n_walks=args.walks, size=args.length, metropolized=args.metropolized))
 
     log.info("Training")
-    model = Word2Vec(WalkIterator(),
+    model = Word2Vec(all_walks,
                      size=args.representation_size,
                      window=args.window_size,
                      min_count=0,
@@ -140,6 +134,8 @@ def main():
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
     p.add_argument('--metropolized', help="Use Metropolize Hastings for random walk", type=bool, default=False)
+    p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
+
 
 
     args = p.parse_args()
