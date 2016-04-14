@@ -172,8 +172,6 @@ def main():
     p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=False)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
-
-
     args = p.parse_args()
 
     train(args)

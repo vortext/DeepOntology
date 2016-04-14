@@ -99,12 +99,15 @@ def train_batch_sg(model, sentences, alpha = None, work = None, sub_batch_size =
 
 
 
-def build_keras_model_sg(index_size,vector_size,
+def build_keras_model_sg(index_size,
+                         vector_size,
                          context_size,
                          sub_batch_size = 256,
                          learn_vectors = True,
                          learn_hidden = True,
                          model = None):
+
+    print(index_size)
 
     kerasmodel = Graph()
     kerasmodel.add_input(name='point', input_shape=(1,), dtype='int32')
@@ -159,6 +162,7 @@ def copy_word2vec_instance_from_to(w2v, w2v_to, sentences = None, documents = No
                 document_length = len(document.words)
                 for tag in document.tags:
                     w2v_to.docvecs.note_doctag(tag, document_no, document_length)
+
         w2v_to.reset_weights()
 
         w2v_to.syn0 = w2v.syn0
