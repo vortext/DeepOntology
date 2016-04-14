@@ -84,7 +84,7 @@ def train_batch_sg(model, sentences, alpha = None, work = None, sub_batch_size =
                     if pos2 != pos:
                         xy_gen = train_sg_pair(model, model.index2word[word.index], word2.index)
                         for xy in xy_gen :
-                            if xy !=None:
+                            if xy != None:
                                 (x0,x1,y)=xy
                                 train_x0[batch_count][sub_batch_count] = x0
                                 train_x1[batch_count][sub_batch_count] = x1
@@ -200,8 +200,6 @@ def train_prepossess(model):
     if len(model.vocab) == 0: #not hasattr(model, 'syn0'):
         print 'build_vocab'
         model.build_vocab(sentences, trim_rule = trim_rule)
-        #print model.syn0
-
 
     model.word_context_size_max = 0
     if model.hs:
@@ -232,10 +230,11 @@ class Word2VecKeras(gensim.models.word2vec.Word2Vec):
         samples_per_epoch = max(1,int((self.iter*self.window*2*sum(map(len,sentences)))/(sub_batch_size)))
 
         if not hasattr(self, 'kerasmodel') or sub_batch_size_update:
-            self.kerasmodel = build_keras_model_sg(index_size = vocab_size,vector_size = self.vector_size,
-                                                    context_size = self.keras_context_index_size,
-                                                    sub_batch_size = sub_batch_size,
-                                                    model = self)
+            self.kerasmodel = build_keras_model_sg(index_size = vocab_size,
+                                                   vector_size = self.vector_size,
+                                                   context_size = self.keras_context_index_size,
+                                                   sub_batch_size = sub_batch_size,
+                                                   model = self)
 
         gen = train_batch_sg(self, sentences, sub_batch_size = sub_batch_size, batch_size = batch_size)
         self.kerasmodel.get_layer("embedding").set_weights([self.syn0])
