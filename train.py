@@ -50,31 +50,19 @@ def random_walk(graph, size=-1, metropolized=False, start_node=None):
 
         yield v
 
-def as_spanning_trees(G):
+def as_spanning_forest(G):
     """
-    For a given graph with multiple sub graphs, find the components
-    and draw a spanning tree.
+    Return a minimum spanning tree or forest of an undirected weighted
+    graph.
 
-    Returns a new networkx.Graph with components as spanning trees (i.e. without cycles).
+    A minimum spanning tree is a subgraph of the graph (a tree) with the
+    minimum sum of edge weights.
 
-    Parameters
-    ---------
-    G:        - networkx.Graph
+    If the graph is not connected a spanning forest is constructed. A
+    spanning forest is a union of the spanning trees for each connected
+    component of the graph.
     """
-
-    log.info("Removing cycles")
-    G2 = nx.Graph()
-    # We find the connected constituents of the graph as subgraphs
-    graphs = nx.connected_component_subgraphs(G, copy=False)
-
-    # For each of these graphs we extract the minimum distance spanning tree, removing the cycles
-    for g in graphs:
-        T = nx.minimum_spanning_tree(g)
-
-        G2.add_nodes_from(T.nodes())
-        G2.add_edges_from(T.edges())
-
-    return G2
+    return nx.minimum_spanning_tree(G)
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
@@ -126,9 +114,9 @@ def train(args):
 
     log.info("Reading input file")
     if args.format == "edgelist":
-        G = as_spanning_trees(load_edgelist(args.input, delimiter=args.delimiter))
+        G = as_spanning_forest(load_edgelist(args.input, delimiter=args.delimiter))
     elif args.format == "adjlist":
-        G = as_spanning_trees(load_adjlist(args.input, delimiter=args.delimiter))
+        G = as_spanning_forest(load_adjlist(args.input, delimiter=args.delimiter))
     else:
         log.error("Format must be one of edgelist or adjlist")
 
@@ -161,7 +149,7 @@ def train(args):
                          trim_rule=None)
 
     log.info("Saving model")
-    model.save_word2vec_format(args.output)
+    model.save_word2vec_format(args.output, binary=args.binary)
 
 
 def main():
@@ -181,6 +169,7 @@ def main():
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
     p.add_argument('--metropolized', help="Use Metropolis Hastings for random walk", type=bool, default=False)
     p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=False)
+    p.add_argument('--binary', help="Use the binary output format for Word2Vec", type=bool, default=True)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
     args = p.parse_args()
