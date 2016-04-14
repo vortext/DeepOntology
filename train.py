@@ -169,7 +169,7 @@ def main():
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
     p.add_argument('--metropolized', help="Use Metropolize Hastings for random walk", type=bool, default=False)
-    p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=True)
+    p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=False)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
 
