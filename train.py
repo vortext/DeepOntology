@@ -6,8 +6,6 @@ import itertools
 import sys
 import logging
 
-from gensim.models import Word2Vec
-from word2veckeras import Word2VecKeras
 
 from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 
@@ -72,8 +70,9 @@ def as_spanning_trees(G):
     # For each of these graphs we extract the minimum distance spanning tree, removing the cycles
     for g in graphs:
         T = nx.minimum_spanning_tree(g)
-        G2.add_edges_from(T.edges())
+
         G2.add_nodes_from(T.nodes())
+        G2.add_edges_from(T.edges())
 
     return G2
 
@@ -100,7 +99,7 @@ def walks(G, workers, n_walks, size, metropolized):
     node_divisor = len(p._pool)*4
     node_chunks = list(chunks(G.nodes(), int(G.order()/node_divisor)))
     num_chunks = len(node_chunks)
-    print("Generating walks with %s chunks on %s processes" % (num_chunks, workers))
+    log.info("Generating walks with %s chunks on %s processes" % (num_chunks, workers))
     walk_sc = p.map(_walk,
                     zip([G]*num_chunks,
                         [size]*num_chunks,
@@ -108,16 +107,28 @@ def walks(G, workers, n_walks, size, metropolized):
                         [metropolized]*num_chunks,
                         node_chunks))
 
-    return list(itertools.chain(*walk_sc))
+    log.info("Concatenating walks")
+    result = list(itertools.chain(*walk_sc))
+
+    # Close the pool, releasing the resources
+    p.close()
+    p.terminate()
+    p.join()
+    return result
 
 def train(args):
+    if args.use_keras:
+        log.info("Using Keras back-end")
+    else:
+        log.info("Using vanilla GenSim back-end")
+
     log.info("Reading input file")
     if args.format == "edgelist":
         G = as_spanning_trees(load_edgelist(args.input, delimiter=args.delimiter))
     elif args.format == "adjlist":
         G = as_spanning_trees(load_adjlist(args.input, delimiter=args.delimiter))
     else:
-        print("Format must be one of edgelist or adjlist")
+        log.error("Format must be one of edgelist or adjlist")
 
     log.info("Generating random walks")
 
@@ -130,6 +141,7 @@ def train(args):
 
     log.info("Training")
     if args.use_keras:
+        from word2veckeras import Word2VecKeras
         model = Word2VecKeras(all_walks,
                               size=args.representation_size,
                               window=args.window_size,
@@ -138,14 +150,15 @@ def train(args):
                               trim_rule=None)
 
     else:
+        from gensim.models import Word2Vec
         model = Word2Vec(all_walks,
-                        size=args.representation_size,
-                        window=args.window_size,
-                        min_count=0,
-                        workers=args.workers,
-                        iter=args.iter,
-                        sg=1,
-                        trim_rule=None)
+                         size=args.representation_size,
+                         window=args.window_size,
+                         min_count=0,
+                         workers=args.workers,
+                         iter=args.iter,
+                         sg=1,
+                         trim_rule=None)
 
     log.info("Saving model")
     model.save_word2vec_format(args.output)
