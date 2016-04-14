@@ -1,4 +1,5 @@
 import networkx as nx
+from multiprocessing import Pool
 import random
 import bisect
 import itertools
@@ -20,7 +21,7 @@ def load_edgelist(f, delimiter=None):
 def load_adjlist(f, delimiter=None):
     return nx.read_adjlist(f,  delimiter=delimiter)
 
-def random_walk(graph, start_node=None, size=-1, metropolized=False):
+def random_walk(graph, size=-1, metropolized=False, start_node=None):
     """
     From http://www.minasgjoka.com/2.5K/sampling3.py
     random_walk(G, start_node=None, size=-1):
@@ -75,20 +76,39 @@ def as_spanning_trees(G):
 
     return G2
 
-def walks(G, n_walks=5, **kwargs):
-    """
-    A generator of random walks on a graph G.
-    Takes an optional argument n_walks for traversing the same node n times.
-    Traverses each node in the graph, yielding a vector of nodes of the random walk.
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
 
-    """
-    nodes = G.nodes()
-    for n in range(n_walks):
+def walk(G, size, n_walks, metropolized, nodes):
+    curr = []
+    for i in range(n_walks):
+        log.info("Walking the walk %s of %s" % (i, n_walks))
         random.shuffle(nodes)
         for n in nodes:
-            walk = random_walk(G, start_node=n, **kwargs)
-            yield list(walk)
+            walk = random_walk(G, size=size, metropolized=metropolized, start_node=n)
+            curr += [list(walk)]
 
+        log.info("Done walking the walk %s of %s" % (i, n_walks))
+    return curr
+
+def _walk(G_size_walks_metropolized_nodes):
+    return walk(*G_size_walks_metropolized_nodes)
+
+def walks(G, workers, n_walks, size, metropolized):
+    p = Pool(processes=workers)
+    node_divisor = len(p._pool)*4
+    node_chunks = list(chunks(G.nodes(), int(G.order()/node_divisor)))
+    num_chunks = len(node_chunks)
+    walk_sc = p.map(_walk,
+                    zip([G]*num_chunks,
+                        [size]*num_chunks,
+                        [n_walks]*num_chunks,
+                        [metropolized]*num_chunks,
+                        node_chunks))
+
+    return list(itertools.chain(*walk_sc))
 
 def train(args):
     random.seed(args.seed)
@@ -101,8 +121,13 @@ def train(args):
         print("Format must be one of edgelist or adjlist")
 
     log.info("Generating random walks")
+
     # TODO make this use some file for larger than memory data sets
-    all_walks = list(walks(G, n_walks=args.walks, size=args.length, metropolized=args.metropolized))
+    all_walks = walks(G,
+                      workers=args.workers,
+                      n_walks=args.walks,
+                      size=args.length,
+                      metropolized=args.metropolized)
 
     log.info("Training")
     model = Word2Vec(all_walks,
@@ -128,7 +153,7 @@ def main():
     p.add_argument('--delimiter', help="Delimiter used in the input file, e.g. ',' for CSV", default=None)
     p.add_argument('--format', help='Format of the input file, either edgelist or adjlist', default="edgelist")
     p.add_argument('--representation-size', default=64, type=int, help='Number of latent dimensions to learn for each node.')
-    p.add_argument('--walks', help="Number of walks for each node", default=10, type=int)
+    p.add_argument('--walks', help="Number of walks for each node", default=5, type=int)
     p.add_argument('--length', help="Length of the random walk on the graph", default=40, type=int)
     p.add_argument('--iter', help="Number of iteration epocs", default=5, type=int)
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
