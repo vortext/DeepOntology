@@ -2,9 +2,23 @@ import networkx as nx
 import random
 import bisect
 import itertools
+import sys
+import logging
 
-def load_edgelist(f):
-    return nx.read_edgelist(f,  delimiter='\t')
+from gensim.models import Word2Vec
+
+from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
+
+LOG_LEVEL = logging.INFO
+logging.basicConfig(level=LOG_LEVEL, format='[%(levelname)s] %(name)s %(asctime)s: %(message)s')
+log = logging.getLogger(__name__)
+
+
+def load_edgelist(f, delimiter='\t'):
+    return nx.read_edgelist(f,  delimiter=delimiter)
+
+def load_adjlist(f, delimiter='\t'):
+    return nx.read_adjlist(f,  delimiter=delimiter)
 
 def random_walk(graph, start_node=None, size=-1, metropolized=False):
     """
@@ -48,6 +62,7 @@ def as_spanning_trees(G):
     G:        - networkx.Graph
     """
 
+    log.info("Removing cycles")
     G2 = nx.Graph()
     # We find the connected constituents of the graph as subgraphs
     graphs = nx.connected_component_subgraphs(G, copy=False)
@@ -71,6 +86,65 @@ def walks(G, n_walks=5, **kwargs):
     for n in range(n_walks):
         random.shuffle(nodes)
         for n in nodes:
-            print n
             walk = random_walk(G, start_node=n, **kwargs)
             yield list(walk)
+
+
+def train(args):
+    log.info("Reading input file")
+    if args.format == "edgelist":
+        G = as_spanning_trees(load_edgelist(args.input, delimiter=args.delimiter))
+    elif args.format == "adjlist":
+        G = as_spanning_trees(load_adjlist(args.input, delimiter=args.delimiter))
+    else:
+        print("Format must be one of edgelist or adjlist")
+
+    def generator():
+        return walks(G, n_walks=args.walks, size=args.length, metropolized=args.metropolized)
+
+    class WalkIterator(object):
+        def __iter__(self):
+            self.generator = generator()
+            return self
+
+        def next(self):
+            return self.generator.next()
+
+    log.info("Training")
+    model = Word2Vec(WalkIterator(),
+                     size=args.representation_size,
+                     window=args.window_size,
+                     min_count=0,
+                     workers=args.workers,
+                     iter=args.iter,
+                     sg=1,
+                     trim_rule=None)
+
+    log.info("Saving model")
+    model.save_word2vec_format(args.output)
+
+
+def main():
+    p = ArgumentParser("DeepOntology",
+                       formatter_class=ArgumentDefaultsHelpFormatter,
+                       conflict_handler='resolve')
+
+    p.add_argument('--input', required=True, help='Input graph file')
+    p.add_argument('--output', required=True, help='Output representation file')
+    p.add_argument('--delimiter', help="Delimiter used in the input file, e.g. ',' for CSV", default=None)
+    p.add_argument('--format', help='Format of the input file, either edgelist or adjlist', default="edgelist")
+    p.add_argument('--representation-size', default=64, type=int, help='Number of latent dimensions to learn for each node.')
+    p.add_argument('--walks', help="Number of walks for each node", default=10, type=int)
+    p.add_argument('--length', help="Length of the random walk on the graph", default=40, type=int)
+    p.add_argument('--iter', help="Number of iteration epocs", default=5, type=int)
+    p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
+    p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
+    p.add_argument('--metropolized', help="Use Metropolize Hastings for random walk", type=bool, default=False)
+
+
+    args = p.parse_args()
+
+    train(args)
+
+if __name__ == "__main__":
+  sys.exit(main())
