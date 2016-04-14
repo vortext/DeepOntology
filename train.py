@@ -53,9 +53,9 @@ def random_walk(graph, size=-1, metropolized=False, start_node=None):
 def as_spanning_trees(G):
     """
     For a given graph with multiple sub graphs, find the components
-    and draw a minimum distance spanning tree.
+    and draw a spanning tree.
 
-    Returns a new Graph with cycles removed.
+    Returns a new networkx.Graph with components as spanning trees (i.e. without cycles).
 
     Parameters
     ---------
@@ -118,8 +118,10 @@ def walks(G, workers, n_walks, size, metropolized):
 
 def train(args):
     if args.use_keras:
+        from word2veckeras import Word2VecKeras
         log.info("Using Keras back-end")
     else:
+        from gensim.models import Word2Vec
         log.info("Using vanilla GenSim back-end")
 
     log.info("Reading input file")
@@ -141,7 +143,6 @@ def train(args):
 
     log.info("Training")
     if args.use_keras:
-        from word2veckeras import Word2VecKeras
         model = Word2VecKeras(all_walks,
                               size=args.representation_size,
                               window=args.window_size,
@@ -150,7 +151,6 @@ def train(args):
                               trim_rule=None)
 
     else:
-        from gensim.models import Word2Vec
         model = Word2Vec(all_walks,
                          size=args.representation_size,
                          window=args.window_size,
