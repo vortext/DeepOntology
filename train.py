@@ -131,23 +131,14 @@ def train(args):
                       metropolized=args.metropolized)
 
     log.info("Training")
-    if args.use_keras:
-        model = Word2VecKeras(all_walks,
-                              size=args.representation_size,
-                              window=args.window_size,
-                              min_count=0,
-                              iter=args.iter,
-                              trim_rule=None)
-
-    else:
-        model = Word2Vec(all_walks,
-                         size=args.representation_size,
-                         window=args.window_size,
-                         min_count=0,
-                         workers=args.workers,
-                         iter=args.iter,
-                         sg=1,
-                         trim_rule=None)
+    model = Word2Vec(all_walks,
+                        size=args.representation_size,
+                        window=args.window_size,
+                        min_count=0,
+                        workers=args.workers,
+                        iter=args.iter,
+                        sg=1,
+                        trim_rule=None)
 
     log.info("Saving model")
     model.save_word2vec_format(args.output, binary=args.binary)
@@ -169,7 +160,6 @@ def main():
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
     p.add_argument('--metropolized', help="Use Metropolis Hastings for random walk", type=bool, default=False)
-    p.add_argument('--use-keras', help="Use a Keras optimized version of the SkipGram model", type=bool, default=False)
     p.add_argument('--binary', help="Use the binary output format for Word2Vec", type=bool, default=True)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
