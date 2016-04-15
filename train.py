@@ -6,6 +6,7 @@ import itertools
 import sys
 import logging
 
+from gensim.models import Word2Vec
 
 from argparse import ArgumentParser, FileType, ArgumentDefaultsHelpFormatter
 
@@ -62,6 +63,7 @@ def as_spanning_forest(G):
     spanning forest is a union of the spanning trees for each connected
     component of the graph.
     """
+    log.info("Removing cycles by transforming to spanning forest")
     return nx.minimum_spanning_tree(G)
 
 def chunks(l, n):
@@ -80,7 +82,6 @@ def walk(G, size, n_walks, metropolized, nodes):
     return curr
 
 def _walk(G_size_walks_metropolized_nodes):
-    log.debug("Removing cycles by transforming to spanning forest")
     return walk(*G_size_walks_metropolized_nodes)
 
 def walks(G, workers, n_walks, size, metropolized):
@@ -96,22 +97,13 @@ def walks(G, workers, n_walks, size, metropolized):
                         [metropolized]*num_chunks,
                         node_chunks))
 
-    log.info("Concatenating walks")
-    result = list(itertools.chain(*walk_sc))
-
     # Close the pool, releasing the resources
     p.close()
     p.terminate()
     p.join()
-    return result
+    return list(itertools.chain(*walk_sc))
 
 def train(args):
-    if args.use_keras:
-        from word2veckeras import Word2VecKeras
-        log.info("Using Keras back-end")
-    else:
-        from gensim.models import Word2Vec
-        log.info("Using vanilla GenSim back-end")
 
     log.info("Reading input file")
     if args.format == "edgelist":
