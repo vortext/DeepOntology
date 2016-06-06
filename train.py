@@ -124,13 +124,14 @@ def train(args):
 
     log.info("Training")
     model = Word2Vec(all_walks,
-                        size=args.representation_size,
-                        window=args.window_size,
-                        min_count=0,
-                        workers=args.workers,
-                        iter=args.iter,
-                        sg=1,
-                        trim_rule=None)
+                     size=args.representation_size,
+                     window=args.window_size,
+                     min_count=0,
+                     workers=args.workers,
+                     iter=args.iter,
+                     sg=1,
+                     hs=1,
+                     trim_rule=None)
 
     log.info("Saving model")
     model.save_word2vec_format(args.output, binary=args.binary)
