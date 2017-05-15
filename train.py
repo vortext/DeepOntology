@@ -134,7 +134,7 @@ def train(args):
                      trim_rule=None)
 
     log.info("Saving model")
-    model.save_word2vec_format(args.output, binary=args.binary)
+    model.save(args.output)
 
 
 def main():
@@ -153,7 +153,6 @@ def main():
     p.add_argument('--window-size', help="Window size of the skipgram model", type=int, default=5)
     p.add_argument('--workers', help="Number of parallel processes", type=int, default=1)
     p.add_argument('--metropolized', help="Use Metropolis Hastings for random walk", type=bool, default=False)
-    p.add_argument('--binary', help="Use the binary output format for Word2Vec", type=bool, default=True)
     p.add_argument('--seed', default=1, type=int, help='Seed for random walk generator.')
 
     args = p.parse_args()
